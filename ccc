@@ -1,0 +1,79 @@
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+app.use(express.json());
+app.use(express.static('public')); // Serve the frontend
+
+// Directory to store generated websites
+const websitesDir = path.join(__dirname, 'websites');
+if (!fs.existsSync(websitesDir)) {
+    fs.mkdirSync(websitesDir);
+}
+
+// Endpoint to create an advanced website
+app.post('/create-website', (req, res) => {
+    const { title, header, footer, sections } = req.body;
+
+    try {
+        // Generate HTML content
+        const html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${title}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f4f4f4;
+                    color: #333;
+                }
+                header {
+                    background: #007BFF;
+                    color: white;
+                    padding: 10px 20px;
+                    text-align: center;
+                }
+                footer {
+                    background: #333;
+                    color: white;
+                    padding: 10px;
+                    text-align: center;
+                }
+                section {
+                    padding: 20px;
+                    text-align: left;
+                }
+            </style>
+        </head>
+        <body>
+            <header>
+                <h1>${header}</h1>
+            </header>
+            ${sections.map(section => `<section><h2>${section.title}</h2><p>${section.content}</p></section>`).join('')}
+            <footer>
+                <p>${footer}</p>
+            </footer>
+        </body>
+        </html>
+        `;
+
+        // Save the website to a file
+        const fileName = `website-${Date.now()}.html`;
+        const filePath = path.join(websitesDir, fileName);
+        fs.writeFileSync(filePath, html);
+
+        res.status(200).json({ success: true, message: 'Website created!', filePath });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Error creating website', error: error.message });
+    }
+});
+
+// Start the server
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
